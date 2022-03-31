@@ -1,0 +1,37 @@
+Arbitrum: https://testnet.arbiscan.io/address/0x034697223c82C3ABEC358D0ccD68f5713Fc21011#readContract
+
+Avalanche: https://testnet.snowtrace.io/address/0x034697223c82C3ABEC358D0ccD68f5713Fc21011#code
+
+Binance: https://testnet.bscscan.com/address/0x034697223c82C3ABEC358D0ccD68f5713Fc21011#code
+
+Ethereum: https://rinkeby.etherscan.io/address/0x034697223c82C3ABEC358D0ccD68f5713Fc21011#code
+
+Fantom: https://testnet.ftmscan.com/address/0x034697223c82C3ABEC358D0ccD68f5713Fc21011#code
+
+Optimism: https://kovan-optimistic.etherscan.io/address/0x034697223c82C3ABEC358D0ccD68f5713Fc21011#code
+
+Polygon: https://mumbai.polygonscan.com/address/0x034697223c82C3ABEC358D0ccD68f5713Fc21011#code
+
+
+Sent FTM -> OPT  9520
+https://testnet.ftmscan.com/tx/0x14df0e5fa3d0c84e9a67dc052cbe64e280f071ac8d3eb242fa55ab8eecb31693
+
+Sent POLY -> ARB 9625
+
+
+Sent AVAX -> BSC 8673
+https://testnet.snowtrace.io/tx/0x6d3368beb5a6c3acfe6e7f41bc90fd09e1190ee8e8d8ee30bf1acb0e2b03bc8d
+
+Sent AVAX -> ETH 8672
+https://testnet.snowtrace.io/tx/0xb8e931f62412a4fa644097fe676e3fa8bdf6ca272b39e963d784cc9218e28a1e
+
+Sent BNB -> AVAX 9944
+https://testnet.bscscan.com/tx/0x285581351b52f6783debf38203dda64b18e8615d26d5935ac1ce3db799ea1516
+Time ~ 1 minute
+
+Sent ETH -> AVAX 1
+https://rinkeby.etherscan.io/tx/0xf41440c1fee5ae637726873afaa180677710c40d0d446d1442314beb7f2ff10a
+Time ~ 2 minutes
+
+Sent AVAX -> ARB 1
+https://testnet.snowtrace.io/tx/0x6b4f744a5170ec6229fa059fa3addecc41cbc6f3e052c4225c048510cc2a8d42
