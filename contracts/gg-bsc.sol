@@ -1283,7 +1283,7 @@ abstract contract NonblockingReceiver is Ownable, ILayerZeroReceiver {
     }
 }
 
-// File: contracts/L0.sol
+// File: contracts/GhostlyGhosts.sol
 
 
 
@@ -1367,22 +1367,27 @@ pragma solidity ^0.8.7;
 // KK000KKKKKK000K0o.  ,KMMMMd .dWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMO. oWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWMMMMMMMMMX:  :0KKKKK00O0
 
 
-contract L0ar is Ownable, ERC721, NonblockingReceiver {
+contract binanceGh0stlyGh0sts is Ownable, ERC721, NonblockingReceiver {
 
     address public _owner;
     string private baseURI;
-    uint256 nextTokenId = 10848;
-    uint256 MAX_MINT_ARBITRUM = 10989;
+    uint256 nextTokenId = 3084;
+    uint256 MAX_MINT_BINANCE = 4472;
 
-    constructor(string memory baseURI_, address _layerZeroEndpoint) ERC721("gh0stlygh0sts", "gg") { 
+    uint gasForDestinationLzReceive = 250000;
+
+    constructor(string memory baseURI_, address _layerZeroEndpoint) ERC721("Gh0stlyGh0sts", "gg") { 
         _owner = msg.sender;
         endpoint = ILayerZeroEndpoint(_layerZeroEndpoint);
         baseURI = baseURI_;
     }
 
+    // mint function
+    // you can choose to mint 1 or 2
+    // mint is free, but payments are accepted
     function mint(uint8 numTokens) external payable {
         require(numTokens < 3, "GG: Max 2 NFTs per transaction");
-        require(nextTokenId + numTokens - 1 < MAX_MINT_ARBITRUM, "GG: Mint exceeds supply");
+        require(nextTokenId + numTokens <= MAX_MINT_BINANCE, "GG: Mint exceeds supply");
         _safeMint(msg.sender, ++nextTokenId);
         if (numTokens == 2) {
             _safeMint(msg.sender, ++nextTokenId);
@@ -1391,7 +1396,7 @@ contract L0ar is Ownable, ERC721, NonblockingReceiver {
 
     // This function transfers the nft from your address on the 
     // source chain to the same address on the destination chain
-    function traverse(uint16 _chainId, uint tokenId) public payable {
+    function traverseChains(uint16 _chainId, uint tokenId) public payable {
         require(msg.sender == ownerOf(tokenId), "You must own the token to traverse");
         require(trustedRemoteLookup[_chainId].length > 0, "This chain is currently unavailable for travel");
 
@@ -1403,7 +1408,6 @@ contract L0ar is Ownable, ERC721, NonblockingReceiver {
 
         // encode adapterParams to specify more gas for the destination
         uint16 version = 1;
-        uint gasForDestinationLzReceive = 250000;
         bytes memory adapterParams = abi.encodePacked(version, gasForDestinationLzReceive);
 
         // get the fees we need to pay to LayerZero + Relayer to cover message delivery
@@ -1434,6 +1438,11 @@ contract L0ar is Ownable, ERC721, NonblockingReceiver {
     function withdraw(uint amt) external onlyOwner {
         (bool sent, ) = payable(_owner).call{value: amt}("");
         require(sent, "GG: Failed to withdraw Ether");
+    }
+
+    // just in case this fixed variable limits us from future integrations
+    function setGasForDestinationLzReceive(uint newVal) external onlyOwner {
+        gasForDestinationLzReceive = newVal;
     }
 
     // ------------------

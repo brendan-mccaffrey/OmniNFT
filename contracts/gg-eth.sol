@@ -1213,58 +1213,192 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     ) internal virtual {}
 }
 
-// File: contracts/L0.sol
+// File: contracts/NonblockingReceiver.sol
+
+
+pragma solidity ^0.8.6;
+
+
+
+
+abstract contract NonblockingReceiver is Ownable, ILayerZeroReceiver {
+
+    ILayerZeroEndpoint internal endpoint;
+
+    struct FailedMessages {
+        uint payloadLength;
+        bytes32 payloadHash;
+    }
+
+    mapping(uint16 => mapping(bytes => mapping(uint => FailedMessages))) public failedMessages;
+    mapping(uint16 => bytes) public trustedRemoteLookup;
+
+    event MessageFailed(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload);
+
+    function lzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) external override {
+        require(msg.sender == address(endpoint)); // boilerplate! lzReceive must be called by the endpoint for security
+        require(_srcAddress.length == trustedRemoteLookup[_srcChainId].length && keccak256(_srcAddress) == keccak256(trustedRemoteLookup[_srcChainId]), 
+            "NonblockingReceiver: invalid source sending contract");
+
+        // try-catch all errors/exceptions
+        // having failed messages does not block messages passing
+        try this.onLzReceive(_srcChainId, _srcAddress, _nonce, _payload) {
+            // do nothing
+        } catch {
+            // error / exception
+            failedMessages[_srcChainId][_srcAddress][_nonce] = FailedMessages(_payload.length, keccak256(_payload));
+            emit MessageFailed(_srcChainId, _srcAddress, _nonce, _payload);
+        }
+    }
+
+    function onLzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) public {
+        // only internal transaction
+        require(msg.sender == address(this), "NonblockingReceiver: caller must be Bridge.");
+
+        // handle incoming message
+        _LzReceive( _srcChainId, _srcAddress, _nonce, _payload);
+    }
+
+    // abstract function
+    function _LzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) virtual internal;
+
+    function _lzSend(uint16 _dstChainId, bytes memory _payload, address payable _refundAddress, address _zroPaymentAddress, bytes memory _txParam) internal {
+        endpoint.send{value: msg.value}(_dstChainId, trustedRemoteLookup[_dstChainId], _payload, _refundAddress, _zroPaymentAddress, _txParam);
+    }
+
+    function retryMessage(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes calldata _payload) external payable {
+        // assert there is message to retry
+        FailedMessages storage failedMsg = failedMessages[_srcChainId][_srcAddress][_nonce];
+        require(failedMsg.payloadHash != bytes32(0), "NonblockingReceiver: no stored message");
+        require(_payload.length == failedMsg.payloadLength && keccak256(_payload) == failedMsg.payloadHash, "LayerZero: invalid payload");
+        // clear the stored message
+        failedMsg.payloadLength = 0;
+        failedMsg.payloadHash = bytes32(0);
+        // execute the message. revert if it fails again
+        this.onLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+    }
+
+    function setTrustedRemote(uint16 _chainId, bytes calldata _trustedRemote) external onlyOwner {
+        trustedRemoteLookup[_chainId] = _trustedRemote;
+    }
+}
+
+// File: contracts/GhostlyGhosts.sol
 
 
 
 pragma solidity ^0.8.7;
 
 
+// 0000KKK0000KKKKKKKKKKKKKKKKKKKKKKKKKKK0KKKKKKKKKKKKKK00000KKKKK0K000000000KKKKKKKK0KKK000KKK000KKKK000KKK00000KK0000000000000000KKKKKKKKKKK000KKKKK000
+// 00KKK0000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000K0xlloxk000000KKKKKKKKKKK00000KK0000KKKK0000KKK0000K000000KK000000000KKKKKKKKKKK0000KKKK000KK
+// KKK0000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000KOl.   ..l000KKKKKKKKKKKKKK0KKK00000KKKK00KKKKKKKKK000000KKKK0000000KKKKKKKKKKK0000KKKKKKKKK00
+// K0000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0KKKKKKKKKKKKKK0x;.... .,xKKKKKKKKKKKKK0klcodddddkO0Okkk0KKKKKKKKK00000KKKKKKKKK000KKKKKKKKKK0000KKKKKKKKKK000
+// 0000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0KKKKKKKKKKKKKKK0l.   .. .oKKKKKKKKKKKK0kc'..',,,,,'''....d0KKKKKK0000KKKKKKKKK0000KKKKKKKKKK00000KKKKKKKKK00KKK
+// 00KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0l..;,.    :OKKKKKKKKKKKx,'ccldxxxxd;. ....:k0KKKKKKKKKKKKKKK000000KKKKKKKKK0000KKKKKKKKKKKKKKK00
+// KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKO, ,o:'''. .'ck0KOxlcclc'.lxxxxxxxxd:';oxdc,';d0KKKKKKKKKKK0000KKKKKKKKKKKK00KKKKKKKKKKK0KKKKK000
+// KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0000KKKKKKKKKKKKKKKKKKKk' ,dl,.:l:,...:c;;:loo:.,dxxxxxxxxxddxxxxxxo,.lkolok0KKK00000KKKKKKKKKKKKKKKKKKKKKKKKK0KKKK00000
+// KKKKKKKKKKKKKKKKKKKKKKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKk, ;xdl;':xxdl'  ,dxxxxc.,dxxxxxxxxxxxxxxxxxxl..... .l00000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000KK
+// KKKKKKKKKKKKKKKKKKKKKKKKKK0000KKKKKKKKKK0KKKKKKKKKKKK0: 'xOxdl,:xOkxc. 'cdxxc.'oxxxxxxxxxxxxxxxxxo,   .,;.'okk0KKKKKKKKKKKKKKKKKKK00KKKKK000KK00000KKK
+// KKKKKKKKKKKKKKKKKKKKKKKK00000KKKKKKKKKK0KKKKKKKKKKKKKKo..ckOkkd,,dkxoc'  'coo;.'cdxxxxxxxxxxxxxxo,.   . .....'d0KKKKKKKKKKKKKKKK000KKKK0000000000KKKKK
+// KKKKKKKKKKKKKKKKKKKKKKK0000KKKKKKKKK000KKKKKKKKKKKKKKKO: .oOkkOd,'lxxddl,....''...,:ldxxxxxxxxdc..,,.'lc. ,, .oKKKKKKKKKKKKKKKKKKKKKK000KK00000KKKKKK0
+// KKKKKKKKKKKKKKKKKKKKK00000KKKKKKKK0000KKKKKKKKKKKKKKKKKk, ,xOkOkx:.;okkOkdlc:,'..    ..,;;::;,.  .';,''. .xk,.dKKKKKKKKKKKKKKKKKKKK0000KK0000KKKKKKK00
+// KKKKKKKKKKKKKKKKKKKK0000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKo. ;xOkkkko,':dkOOOOOkxoc;;'..            .d0Ok;..;;.;kKKKKKKKKKKKKKKKKKKK000KKK000KKKKKKK0000
+// KKKKKKKKKKKKKKKKKK0000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKd,..'dOkkkOkl;',:ldxkkkxolc:;;;;:c;,,,'.  .lkkl' ..  .:OKKKKKKKKKKKKKKKKK000KKKKKKKKKKKKK0000K
+// K000KKKK0KKKKKKK0000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKd;lc..:oxOkkOkxl;'',,,;;;::;,,,'....    .c,....       .oKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000KKK
+// 0000KK00KKKKKKK0000KKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKKKk;,c'   'coxkOOxc;::c;..........   .:dd:...... .::.   .dKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000KKKK
+// 000K000KKKKKK0000KKKKKKKKK00KKKKKKKKKKKKKKKKKKKKKKKKKK0ko,.,cxOd:'..',:cc:clooc;;:;,'..';lkXWMMWKo'... .;:'. .;x0KKKKKKKKKKKKKKKKKKKKKKKKKK00000KKKKKK
+// 000000KKKKK00000KKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKK0x:',o0NMMMMWNKOxl;'''',,'',,'.';oOXWMMMMMMMMMXk:...;lc....,kKKKKKKKKKKKKKKKKK00KKKKKK0000KKKK00KK
+// K000KKKKKK0000KKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKKKk:':kNMMMMMMMMMMMMMWNXKKXXXXXXXXNWMMMMMMMMMMMMMMMW0d;',,.',.'xKKKKKKKKKKKKKK0000KKKKKK000KKKKKK00KK
+// 000KKKKKK00KKKKKKKKK0000KKKKKKKKKKKKKKKKKKKKKKKKK0o,;OWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWO:. .:ok0KKKKKKKKKKKKK0000KKKKK0000KKKKKKKKKKK
+// 00KKKK00KKKKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKKK0l'oNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXo. :OKKKKKKKKKKKKK0000KKKKKK000KKKKKKKKKKKKK
+// KKKK000KKKKKKKKKK0000KKKKKKKKKKKKKKKKKKKKKKKKKK0l'oNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNd..dKKKKKKKKKKKK000KKKKKKK00KKKKKKKKKKKKKKK
+// K00000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKo'lXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWk',kKKKKKKKKKK00KKKKKKKKKKKKKKKKKKKKKKKKKK
+// 00000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKK0OkO00d,cXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWk''x00KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+// 0000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKK0Kkc..,''..,ldOKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXl..o0KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+// 00KKKKKKKKK0000KKKKKKKKKKKKKKKKKKKKKKKO:.'x0kddoc,...;xKNMMMMMMMMMMMMMMMMMMMMMMMMMMMMWWNXNNXXXKXNWMMMMWNXKOxlcll.'kKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+// 0KKKKKKKKK0000KKKKKK00KKKKKKKKKKKK00K0c.:KNkc,,cxkOkdc:;;ckXNWMMMMMMMMMMMWXK0Odoolc:::::::cc:;;,,ckOxoc;,..,:oKWx.;OKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+// KKKKKKKK0000KKKKKKKKKKKKKKKKKKKK000KKo.;KXc       .:ldkkkdc;',:x0KK00OxdddooooooddxxOO0KKKKK0OOx' .lolodkO0XNN0kx;.:O000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+// KKKKKKK0000KKKKKKKKKKKKKKKKKKKK00KKKk,,0Xc             .':k0d:,',,...,cxKXOxdolcccccloodk0NWMWWWx'oXNWMMMWKxc'.;00,.:k00KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+// KKKKK00000KKKKKKKKKKKKKKKKKKK000KKK0:.oWO'                .OXkxOKO, 'OWNx,.              .'l0NMMXddNMWXkl,..':xXWWk'.cOKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+// KKK00000KKKKKKKKKKKKKKKKKKKK0KKKKKK0l.:XNo.               .xx. .::. :XNl                    .kWMMKdOKl'.'cd0NMMMMMWk,.cOKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+// KK0000KKKKKKKKKKKKKKKKKKKKK0KKKKKKKK0l,dWK,               'x:.lkd' ;0Mk.                     :XMMMX0kdx0NMMMMMMMMMMWk..l0KKKKKKKKKKKKKKKKKKKKKKKKKKKK0
+// 00000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKc.lK0o,             co.;XW0;.kWMx.                     ,KMMMMNXWMMMMMMMMMMMMMMNo.'xKKKKKKKKKKKKKKKKKKKKKKKKKK000
+// 000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0Kd. :0NXOl'.       'dk'.kMMWd.,OWK,                    .oNMMWKol0MMMMMMMMMMMMMMMK: ,kKKKKKKKKKKKKKKKKKKKKKKKK000K
+// KKKKKKKK00KKKKKKKKKKKKKKKKKKKKKKKKKK0KO,.',,:ldddxxxddxkOO:.lNMMMXl..dXO,                  .dNMMWk;.lXMMMMMMMMMMMMMMMMk. ;OKKKKKKKKKKKKKKKKKKKKKKKKKKK
+// KKKK00000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKd.'0Xxlc;'.,cdl:;'.':kNMMMMWK:  ,kKkolc:;,...  ...,cxKWMMNo..c0WMMMMMMMMMMMMMMMMWd. :OKKKKKKKKKKKKKKKKKKKKKKKKKK
+// KK00000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKo.,KMMMMWXOdc,';ldkKNMMMMMMMWXx;..:ONWWWWNX0OOO0KXWWMMMMNo..lOWMMMMMMMMMMMMMMMMMMNc .l0KKKKKKKKKKKKKKKKKKKKKKKKK
+// 000000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0l ,KMMMMMMMMMWNWMMMMMMMMMMMMMMMNOo::::ccclc::ccccclooodxocoOXWMMMMMMMMMMMMMMMMMMMNo. 'xKKKKKKKKKKKKKKKKKKKKKKKKK
+// 0000KKKKKKKKKKKKKK0Oxollcccodk0KKKKKK0l .OMMMMMMMMMMMMMMMMMMMMMMMMKdd0WMWNK0OOOOkkkkkkkk0KK00O0XMMMMMMMMMMMMMMMMMMMMMMMk'   :OKKKKKKKKKKKKKKKKKKKKKKKK
+// 000KKKKKKKKK0Okxdl:;;,;::ccl:;:lxOKKKKo.'0MMMMMMMMMMMMMMMMMMMMWWNKo..'lKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNk;  'xKKKKKKKKKKKKKKKKKKKKKKKK
+// 0KKKKKKKKKKk:',,;:coddddoollodo:oOKK00l.,KMMMMMMMMMMMMMMNklcc::;,,,ck0kXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWx.  .,x000KKKKKKKKKKKKKKKKKK00
+// KKKKKKKKKKKd.:kkxxdxxddddxO0KKOlo0K00Ko.'0MMMMMMMMMMMMMMW0kkxxkO0KNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNd,.. .lO0KKKKKKKKKKKKKKKKKKK00
+// K00KKKKKK0Kk':KWXKKKKKKKKKKKKKkco0K0KKo.,KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNOdOKl..co. .,d0KKKK00KKKKKKKKKKKKK0
+// 000KKKK0KKKO;,0WXKKKKKKKKKKKKKkloOKKKKo.:XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWX0KO, ':'.'x0:   :0KKK00KKKKKKKKKKKK000
+// 00KK00KKKKKKl.dNNKKKKKKKK00OOkl;ckKK0Kx.,0MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXKXWMMO,..,..o;...lKd. ;xKKK00KKKKKKKKKKKKK000
+// KK0000KKKKKKk,;KNKK0kkOO00Oxc,..,o0KKKx..OW0xdkKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWx'..;oOo..:,..'.  ..xK,.c0K000KKKKKKKKKKKKKKK00
+// K000KKKKKKKKKo'dNOolcllccc:ccdkxokKKKKk'.kXl';:co0WMMMMMXdl0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWNWMMMMNc ,c:.'l:':,.c:. ,ldKNl ,kK0KKKKKKKKKKKKKKKK000
+// 000KKKKKKKK00k,:0xcdkkdoodk0KKKOok0xddo'.dWd,lxdc:oKWMW0;. ;XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMW0:'cOkloOd.'odc.':. .:XNOkXMMMWx..o0KKKKKKKKKKKKKKKK0000
+// 000KK0KKKK0000c,OX00000KKKKKKKKOdxc..',:;d0x;:ddddc:O0l. ,,,kMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX;   ''...ll'',. .. ..'lKMMMMMMM0' .lOKKKKKKKKKKKKK000000
+// 0KKK00000000KKx;dXKKKKKKKKKKKKK0xd;.;oodl'....';lo:... .,:,.,OWMMMMMMWX0kx0NWMMMMMMMMMMMMMMWWK; ';. .'';OX0x, .. .'..oWMMMMMMK;  .lKKKKKKKKKKKKK0000O0
+// 0KK00000000KK0x,;o:;;::cllllloddlxx;.;cc,  ;dl'...';:;..xXl...:OWMMW0c.. .;lodkNMMXxlodOKklccxx,',.  ..'kWMWO;..':;,lKMMMMMMMWo. .c0KKKKKKKKKKKKKK0000
+// K00O000000K0d;,,:l'.,:,'.. .,,;;;xK0xc'.....,,.. ,odxx, .;:,:xo;:kW0'  ......;;cOWk',lc;..cd,'OO,.  .''.:XMMMNOkKXXNWMMMMMMMMWo.  ,kKKKKKKKKKKKKK00000
+// 00O000000KOc.c0NO:..:dxOOo,.',';oOKKK0c  ;oooc'  'okd,..,:o;'OWXd;cc. ,oo'  ,od:cX0;,oc' .cl';Kklo'..:l,:KMMMMMMMMMMMMMMMMMMMNo  ..oKK000KKKKKKKK0KKKK
+// 00000000K0c.dNMMWOl;'',;;,,,,'.'dO00Kk, ,llc;;,'....  .oo;.  'cxOo..:'.,'.   .'.:KNo....   .,OWxckc,xkod0WMMMMMMMMMMMMMMMMMMMWd. ..dK000KKKKKKKKKKKKKK
+// 0000000KKk',KMMMMMMWNXXKKKKXNNOl',oOKx. oWWX000KK:.;:. .ldc.   ..,;.'clc:.   .;,'xWO'......'dWMXxolxNMMMMMMMMMMMMMMMMMMMMMMMMMO'  'xK00KKKKKKKKKKKKKKK
+// 00000KKKKO,'0MMMMMMMMMMMMMMMMMMWKl';dd..xMMMMMMMWl'lo:;;:l;.';'.;xx:':ccc;',codooOWNkooxOo;cxO0NWMWWMMMMMMMMMMMMMMMMMMMMMMMMMMNl  .x00KKKKKKKKKKKKKKKK
+// 0000KKKKKKl.dWMMMMMMMMMMMMMMMMMMMWO;.,.'0MMMMMMMWo..cKWNXKxcloll0NXX0kxxxkXWWWNNWMMMMMW0c......';lxKWMMMMMMMMMMMMMMMMMMMMMMMMMMK;  ;kKKKKKKKKKKKKKKKKK
+// 000KKKKK0KO;'kWMMMMMMMMMMMMMMMMMMMMNx. ,KMMMMMMMWklkNMMMMMMNXXNMMMMMMMMMMMMMMMMMMMMMMWx,:xOO00koc;,;cdONMMMMMMMMMMMMMMMMMMMMMMMW0:  .oOKKKKKKKKKKKKKK0
+// 00KKKK0KKK0x,'OMMMMMMMMMMMMMMMMMMMMWO, .xMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWx'oNMMMMMMMMMWKOkddkXWMMMMMMMMMMMMMMMMMMMMMMXd. .l0KKKKKKKKKKKK00
+// 0KKK00KKK000x,,OWMMMMMMMMMMMMMMMMMMNo. :KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX:,KMMMMMMMMMMMMMMWKdldKWMMMMMMMMMMMMMMMMMMMMMNk' .oKKKKKKKKKKKKKK
+// KKK00KKK000KKk,'xNMMMMMMMMMMMMMMMMWk' .OMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK;;XMMMMMMMMMMMMMMMMW0o:dKNWMMMMMMMMMMMMMMMMMMMWd. 'xKKKKKKKKKKKKK
+// KK00KK0000KKKKx..kMMMMMMMMMMMMMMMWk' .dWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK,'0MMMMMMMMMMMMMMMMMMWKxddKMMMMMMMMMMMMMMMMMMMMK,  ;OKKKKKKKKKKK0
+// KKKKK0000KKKKK0: :XMMMMMMMMMMMMMWk'  oNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK;.cxXMMMMMMMMMMMMMMMMMMMMWWMMMMMMMMMMMMMMMMMMMMWd. .l0KKKKKKKKK00
+// KKKK0000KKKKKK0: .xWMMMMMMMMMMMWO' .cXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWk,. lNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMXc  .dKKKKKKKK000
+// KKK00000KKKKKK0:  :NMMMMMMMMMMW0;  cNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMW0; .kWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWO'  ;OKKKKK0000K
+// KK000000KKKKKK0l  .OMMMMMMMMMMXc  ;KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK, :XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNl  .dKKKK0000KK
+// K0000000K00KK0Kx' .xMMMMMMMMMNd. ,0MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMx..kMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWx. .oKKK0000KKK
+// K000000K000KKKK0l .dMMMMMMMMWO' 'OMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX; :XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWO'  c0K0000KKKK
+// K00000K000KKKK0Kx. lNMMMMMMMK; .xWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWo .xMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMk. .lK000KKKKKK
+// 00000K000KKKKK0Kx. ;XMMMMMMNo. cNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMd. lWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMk.  c000KKKKKK0
+// 000KK000KKKKK00Kx. .OMMMMMM0, '0MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMx. ;XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM0,  :O0KKKKKK00
+// 00K0000KKKKKKKKKx.  oWMMMMNo. lNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMk. ;XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX:  ;OKKKKKKK00
+// 0K0000KKKKKK00KKd.  ;XMMMMk. ,0MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMO. cNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX:  ;OK0KKKK000
+// KK000KKKKKK000K0o.  ,KMMMMd .dWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMO. oWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWMMMMMMMMMX:  :0KKKKK00O0
 
 
-
-contract L0f is Ownable, ERC721, ILayerZeroReceiver {
+contract ethGh0stlyGh0sts is Ownable, ERC721, NonblockingReceiver {
 
     address public _owner;
     string private baseURI;
-    uint256 nextTokenId = 9518;
-    uint256 MAX_MINT_FANTOM = 9942;
+    uint256 nextTokenId = 0;
+    uint256 MAX_MINT_ETHEREUM = 3084;
 
-    ILayerZeroEndpoint public endpoint;
-    mapping(uint16 => bytes) public remotes;
+    uint gasForDestinationLzReceive = 250000;
 
-    event EstimatedFee(uint fee);
-
-    constructor(string memory baseURI_, address _layerZeroEndpoint) ERC721("LayerGh0sts", "L0") { 
+    constructor(string memory baseURI_, address _layerZeroEndpoint) ERC721("gh0stlygh0sts", "gg") { 
         _owner = msg.sender;
         endpoint = ILayerZeroEndpoint(_layerZeroEndpoint);
         baseURI = baseURI_;
     }
 
+    // mint function
+    // you can choose to mint 1 or 2
+    // mint is free, but payments are accepted
     function mint(uint8 numTokens) external payable {
         require(numTokens < 3, "GG: Max 2 NFTs per transaction");
-        require(nextTokenId + numTokens - 1 < MAX_MINT_FANTOM, "GG: Mint exceeds supply");
+        require(nextTokenId + numTokens <= MAX_MINT_ETHEREUM, "GG: Mint exceeds supply");
         _safeMint(msg.sender, ++nextTokenId);
         if (numTokens == 2) {
             _safeMint(msg.sender, ++nextTokenId);
         }
     }
 
-    function donate() external payable {
-        // thank you
-    }
-
-    function withdraw(uint amt) external onlyOwner {
-        (bool sent, ) = payable(_owner).call{value: amt}("");
-        require(sent, "Failed to withdraw Ether");
-    }
-    
-
     // This function transfers the nft from your address on the 
     // source chain to the same address on the destination chain
-    function traverse(uint16 _chainId, uint tokenId) public payable {
+    function traverseChains(uint16 _chainId, uint tokenId) public payable {
         require(msg.sender == ownerOf(tokenId), "You must own the token to traverse");
-        require(remotes[_chainId].length > 0, "This chain is currently unavailable for travel");
+        require(trustedRemoteLookup[_chainId].length > 0, "This chain is currently unavailable for travel");
 
         // burn NFT, eliminating it from circulation on src chain
         _burn(tokenId);
@@ -1274,55 +1408,56 @@ contract L0f is Ownable, ERC721, ILayerZeroReceiver {
 
         // encode adapterParams to specify more gas for the destination
         uint16 version = 1;
-        uint gasForDestinationLzReceive = 250000;
         bytes memory adapterParams = abi.encodePacked(version, gasForDestinationLzReceive);
 
         // get the fees we need to pay to LayerZero + Relayer to cover message delivery
         // you will be refunded for extra gas paid
         (uint messageFee, ) = endpoint.estimateFees(_chainId, address(this), payload, false, adapterParams);
-        emit EstimatedFee(messageFee);
         
-        require(msg.value >= messageFee, "msg.value < messageFee. pls send gas for message fees");
+        require(msg.value >= messageFee, "GG: msg.value not enough to cover messageFee. Send gas for message fees");
 
         endpoint.send{value: msg.value}(
-            _chainId,               // destination chainId
-            remotes[_chainId],      // destination address of nft contract
-            payload,                // abi.encoded()'ed bytes
-            payable(msg.sender),    // refund address
-            address(0x0),           // 'zroPaymentAddress' unused for this
-            adapterParams           // txParameters 
+            _chainId,                           // destination chainId
+            trustedRemoteLookup[_chainId],      // destination address of nft contract
+            payload,                            // abi.encoded()'ed bytes
+            payable(msg.sender),                // refund address
+            address(0x0),                       // 'zroPaymentAddress' unused for this
+            adapterParams                       // txParameters 
         );
+    }  
+
+    function setBaseURI(string memory URI) external onlyOwner {
+        baseURI = URI;
     }
 
-    // set remote addresses for other chains
-    function setRemote(uint16 _chainId, bytes calldata _remoteAddress) external onlyOwner {
-        require(remotes[_chainId].length == 0, "The remote address has already been set for the chainId!");
-        remotes[_chainId] = _remoteAddress;
+    function donate() external payable {
+        // thank you
     }
 
-    // receive the bytes payload from the source chain via LayerZero
-    function lzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64, bytes memory _payload) override external {
-        // lzReceive must be called by the endpoint for security
-        require(msg.sender == address(endpoint)); 
+    // This allows the devs to receive kind donations
+    function withdraw(uint amt) external onlyOwner {
+        (bool sent, ) = payable(_owner).call{value: amt}("");
+        require(sent, "GG: Failed to withdraw Ether");
+    }
 
-        // owner must have setRemote() to allow its remote contracts to send to this contract
-        require(
-            _srcAddress.length == remotes[_srcChainId].length && keccak256(_srcAddress) == keccak256(remotes[_srcChainId]),
-            "Invalid remote sender address. owner should call setRemote() to enable remote contract"
-        );
+    // just in case this fixed variable limits us from future integrations
+    function setGasForDestinationLzReceive(uint newVal) external onlyOwner {
+        gasForDestinationLzReceive = newVal;
+    }
 
+    // ------------------
+    // Internal Functions
+    // ------------------
+
+    function _LzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) override internal {
         // decode
         (address toAddr, uint tokenId) = abi.decode(_payload, (address, uint));
 
         // mint the tokens back into existence on destination chain
         _safeMint(toAddr, tokenId);
-    }
+    }  
 
     function _baseURI() override internal view returns (string memory) {
         return baseURI;
-    }
-
-    function setBaseURI(string memory URI) external onlyOwner {
-        baseURI = URI;
     }
 }
