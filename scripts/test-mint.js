@@ -7,7 +7,7 @@ async function main() {
     let signer = hre.ethers.getSigner("todo - ouraddr")
 
     // the contracts were deployed to the same address in the test run
-    testaddr = "0x034697223c82C3ABEC358D0ccD68f5713Fc21011";
+    testaddr = "redacted";
     // ethTestAddr = ""
     // polyTestAddr = ""
     // arbTestAddr = ""
@@ -17,10 +17,10 @@ async function main() {
     // avaxTestAddr = ""
 
     const contract = await con.attach(
-        
+
     );
 
-    let resp = await contract.mint(1 or 2);
+    let resp = await contract.mint(1);
 
     let res = await resp.wait();
     console.log(res);
@@ -31,7 +31,7 @@ async function main() {
 
     console.log("Expect 1 or 2:", resp)
 
-    
+
 }
 
 main()
@@ -39,4 +39,4 @@ main()
     .catch((error) => {
         console.error(error);
         process.exit(1);
-});
+    });

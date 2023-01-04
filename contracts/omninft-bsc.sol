@@ -1,7 +1,4 @@
-
 // File: contracts/interfaces/ILayerZeroUserApplicationConfig.sol
-
-
 
 pragma solidity >=0.5.0;
 
@@ -11,7 +8,12 @@ interface ILayerZeroUserApplicationConfig {
     // @param _chainId - the chainId for the pending config change
     // @param _configType - type of configuration. every messaging library has its own convention.
     // @param _config - configuration in the bytes. can encode arbitrary content.
-    function setConfig(uint16 _version, uint16 _chainId, uint _configType, bytes calldata _config) external;
+    function setConfig(
+        uint16 _version,
+        uint16 _chainId,
+        uint256 _configType,
+        bytes calldata _config
+    ) external;
 
     // @notice set the send() LayerZero messaging library version to _version
     // @param _version - new messaging library version
@@ -24,15 +26,13 @@ interface ILayerZeroUserApplicationConfig {
     // @notice Only when the UA needs to resume the message flow in blocking mode and clear the stored payload
     // @param _srcChainId - the chainId of the source chain
     // @param _srcAddress - the contract address of the source contract at the source chain
-    function forceResumeReceive(uint16 _srcChainId, bytes calldata _srcAddress) external;
+    function forceResumeReceive(uint16 _srcChainId, bytes calldata _srcAddress)
+        external;
 }
 
 // File: contracts/interfaces/ILayerZeroEndpoint.sol
 
-
-
 pragma solidity >=0.5.0;
-
 
 interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @notice send a LayerZero message to the specified address at a LayerZero endpoint.
@@ -42,7 +42,14 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @param _refundAddress - if the source transaction is cheaper than the amount of value passed, refund the additional amount to this address
     // @param _zroPaymentAddress - the address of the ZRO token holder who would pay for the transaction
     // @param _adapterParams - parameters for custom functionality. e.g. receive airdropped native gas from the relayer on destination
-    function send(uint16 _dstChainId, bytes calldata _destination, bytes calldata _payload, address payable _refundAddress, address _zroPaymentAddress, bytes calldata _adapterParams) external payable;
+    function send(
+        uint16 _dstChainId,
+        bytes calldata _destination,
+        bytes calldata _payload,
+        address payable _refundAddress,
+        address _zroPaymentAddress,
+        bytes calldata _adapterParams
+    ) external payable;
 
     // @notice used by the messaging library to publish verified payload
     // @param _srcChainId - the source chain identifier
@@ -51,16 +58,29 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @param _nonce - the unbound message ordering nonce
     // @param _gasLimit - the gas limit for external contract execution
     // @param _payload - verified payload to send to the destination contract
-    function receivePayload(uint16 _srcChainId, bytes calldata _srcAddress, address _dstAddress, uint64 _nonce, uint _gasLimit, bytes calldata _payload) external;
+    function receivePayload(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress,
+        address _dstAddress,
+        uint64 _nonce,
+        uint256 _gasLimit,
+        bytes calldata _payload
+    ) external;
 
     // @notice get the inboundNonce of a receiver from a source chain which could be EVM or non-EVM chain
     // @param _srcChainId - the source chain identifier
     // @param _srcAddress - the source chain contract address
-    function getInboundNonce(uint16 _srcChainId, bytes calldata _srcAddress) external view returns (uint64);
+    function getInboundNonce(uint16 _srcChainId, bytes calldata _srcAddress)
+        external
+        view
+        returns (uint64);
 
     // @notice get the outboundNonce from this source chain which, consequently, is always an EVM
     // @param _srcAddress - the source chain contract address
-    function getOutboundNonce(uint16 _dstChainId, address _srcAddress) external view returns (uint64);
+    function getOutboundNonce(uint16 _dstChainId, address _srcAddress)
+        external
+        view
+        returns (uint64);
 
     // @notice gets a quote in source native gas, for the amount that send() requires to pay for message delivery
     // @param _dstChainId - the destination chain identifier
@@ -68,7 +88,13 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @param _payload - the custom message to send over LayerZero
     // @param _payInZRO - if false, user app pays the protocol fee in native token
     // @param _adapterParam - parameters for the adapter service, e.g. send some dust native token to dstChain
-    function estimateFees(uint16 _dstChainId, address _userApplication, bytes calldata _payload, bool _payInZRO, bytes calldata _adapterParam) external view returns (uint nativeFee, uint zroFee);
+    function estimateFees(
+        uint16 _dstChainId,
+        address _userApplication,
+        bytes calldata _payload,
+        bool _payInZRO,
+        bytes calldata _adapterParam
+    ) external view returns (uint256 nativeFee, uint256 zroFee);
 
     // @notice get this Endpoint's immutable source identifier
     function getChainId() external view returns (uint16);
@@ -77,20 +103,33 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @param _srcChainId - the source chain identifier
     // @param _srcAddress - the source chain contract address
     // @param _payload - the payload to be retried
-    function retryPayload(uint16 _srcChainId, bytes calldata _srcAddress, bytes calldata _payload) external;
+    function retryPayload(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress,
+        bytes calldata _payload
+    ) external;
 
     // @notice query if any STORED payload (message blocking) at the endpoint.
     // @param _srcChainId - the source chain identifier
     // @param _srcAddress - the source chain contract address
-    function hasStoredPayload(uint16 _srcChainId, bytes calldata _srcAddress) external view returns (bool);
+    function hasStoredPayload(uint16 _srcChainId, bytes calldata _srcAddress)
+        external
+        view
+        returns (bool);
 
     // @notice query if the _libraryAddress is valid for sending msgs.
     // @param _userApplication - the user app address on this EVM chain
-    function getSendLibraryAddress(address _userApplication) external view returns (address);
+    function getSendLibraryAddress(address _userApplication)
+        external
+        view
+        returns (address);
 
     // @notice query if the _libraryAddress is valid for receiving msgs.
     // @param _userApplication - the user app address on this EVM chain
-    function getReceiveLibraryAddress(address _userApplication) external view returns (address);
+    function getReceiveLibraryAddress(address _userApplication)
+        external
+        view
+        returns (address);
 
     // @notice query if the non-reentrancy guard for send() is on
     // @return true if the guard is on. false otherwise
@@ -105,20 +144,29 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @param _chainId - the chainId for the pending config change
     // @param _userApplication - the contract address of the user application
     // @param _configType - type of configuration. every messaging library has its own convention.
-    function getConfig(uint16 _version, uint16 _chainId, address _userApplication, uint _configType) external view returns (bytes memory);
+    function getConfig(
+        uint16 _version,
+        uint16 _chainId,
+        address _userApplication,
+        uint256 _configType
+    ) external view returns (bytes memory);
 
     // @notice get the send() LayerZero messaging library version
     // @param _userApplication - the contract address of the user application
-    function getSendVersion(address _userApplication) external view returns (uint16);
+    function getSendVersion(address _userApplication)
+        external
+        view
+        returns (uint16);
 
     // @notice get the lzReceive() LayerZero messaging library version
     // @param _userApplication - the contract address of the user application
-    function getReceiveVersion(address _userApplication) external view returns (uint16);
+    function getReceiveVersion(address _userApplication)
+        external
+        view
+        returns (uint16);
 }
 
 // File: contracts/interfaces/ILayerZeroReceiver.sol
-
-
 
 pragma solidity >=0.5.0;
 
@@ -128,10 +176,14 @@ interface ILayerZeroReceiver {
     // @param _srcAddress - the source sending contract address from the source chain
     // @param _nonce - the ordered message nonce
     // @param _payload - the signed payload is the UA bytes has encoded to be sent
-    function lzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) external;
+    function lzReceive(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress,
+        uint64 _nonce,
+        bytes calldata _payload
+    ) external;
 }
 // File: @openzeppelin/contracts/utils/Strings.sol
-
 
 // OpenZeppelin Contracts v4.4.1 (utils/Strings.sol)
 
@@ -187,7 +239,11 @@ library Strings {
     /**
      * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
      */
-    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
+    function toHexString(uint256 value, uint256 length)
+        internal
+        pure
+        returns (string memory)
+    {
         bytes memory buffer = new bytes(2 * length + 2);
         buffer[0] = "0";
         buffer[1] = "x";
@@ -201,7 +257,6 @@ library Strings {
 }
 
 // File: @openzeppelin/contracts/utils/Context.sol
-
 
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
 
@@ -229,11 +284,9 @@ abstract contract Context {
 
 // File: @openzeppelin/contracts/access/Ownable.sol
 
-
 // OpenZeppelin Contracts v4.4.1 (access/Ownable.sol)
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -250,7 +303,10 @@ pragma solidity ^0.8.0;
 abstract contract Ownable is Context {
     address private _owner;
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
@@ -290,7 +346,10 @@ abstract contract Ownable is Context {
      * Can only be called by the current owner.
      */
     function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        require(
+            newOwner != address(0),
+            "Ownable: new owner is the zero address"
+        );
         _transferOwnership(newOwner);
     }
 
@@ -306,7 +365,6 @@ abstract contract Ownable is Context {
 }
 
 // File: @openzeppelin/contracts/utils/Address.sol
-
 
 // OpenZeppelin Contracts v4.4.1 (utils/Address.sol)
 
@@ -362,10 +420,16 @@ library Address {
      * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
     function sendValue(address payable recipient, uint256 amount) internal {
-        require(address(this).balance >= amount, "Address: insufficient balance");
+        require(
+            address(this).balance >= amount,
+            "Address: insufficient balance"
+        );
 
         (bool success, ) = recipient.call{value: amount}("");
-        require(success, "Address: unable to send value, recipient may have reverted");
+        require(
+            success,
+            "Address: unable to send value, recipient may have reverted"
+        );
     }
 
     /**
@@ -386,7 +450,10 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
+    function functionCall(address target, bytes memory data)
+        internal
+        returns (bytes memory)
+    {
         return functionCall(target, data, "Address: low-level call failed");
     }
 
@@ -420,7 +487,13 @@ library Address {
         bytes memory data,
         uint256 value
     ) internal returns (bytes memory) {
-        return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
+        return
+            functionCallWithValue(
+                target,
+                data,
+                value,
+                "Address: low-level call with value failed"
+            );
     }
 
     /**
@@ -435,10 +508,15 @@ library Address {
         uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
-        require(address(this).balance >= value, "Address: insufficient balance for call");
+        require(
+            address(this).balance >= value,
+            "Address: insufficient balance for call"
+        );
         require(isContract(target), "Address: call to non-contract");
 
-        (bool success, bytes memory returndata) = target.call{value: value}(data);
+        (bool success, bytes memory returndata) = target.call{value: value}(
+            data
+        );
         return verifyCallResult(success, returndata, errorMessage);
     }
 
@@ -448,8 +526,17 @@ library Address {
      *
      * _Available since v3.3._
      */
-    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
-        return functionStaticCall(target, data, "Address: low-level static call failed");
+    function functionStaticCall(address target, bytes memory data)
+        internal
+        view
+        returns (bytes memory)
+    {
+        return
+            functionStaticCall(
+                target,
+                data,
+                "Address: low-level static call failed"
+            );
     }
 
     /**
@@ -475,8 +562,16 @@ library Address {
      *
      * _Available since v3.4._
      */
-    function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {
-        return functionDelegateCall(target, data, "Address: low-level delegate call failed");
+    function functionDelegateCall(address target, bytes memory data)
+        internal
+        returns (bytes memory)
+    {
+        return
+            functionDelegateCall(
+                target,
+                data,
+                "Address: low-level delegate call failed"
+            );
     }
 
     /**
@@ -527,7 +622,6 @@ library Address {
 
 // File: @openzeppelin/contracts/token/ERC721/IERC721Receiver.sol
 
-
 // OpenZeppelin Contracts v4.4.1 (token/ERC721/IERC721Receiver.sol)
 
 pragma solidity ^0.8.0;
@@ -557,7 +651,6 @@ interface IERC721Receiver {
 
 // File: @openzeppelin/contracts/utils/introspection/IERC165.sol
 
-
 // OpenZeppelin Contracts v4.4.1 (utils/introspection/IERC165.sol)
 
 pragma solidity ^0.8.0;
@@ -585,11 +678,9 @@ interface IERC165 {
 
 // File: @openzeppelin/contracts/utils/introspection/ERC165.sol
 
-
 // OpenZeppelin Contracts v4.4.1 (utils/introspection/ERC165.sol)
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Implementation of the {IERC165} interface.
@@ -609,18 +700,22 @@ abstract contract ERC165 is IERC165 {
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
         return interfaceId == type(IERC165).interfaceId;
     }
 }
 
 // File: @openzeppelin/contracts/token/ERC721/IERC721.sol
 
-
 // OpenZeppelin Contracts v4.4.1 (token/ERC721/IERC721.sol)
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Required interface of an ERC721 compliant contract.
@@ -629,17 +724,29 @@ interface IERC721 is IERC165 {
     /**
      * @dev Emitted when `tokenId` token is transferred from `from` to `to`.
      */
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint256 indexed tokenId
+    );
 
     /**
      * @dev Emitted when `owner` enables `approved` to manage the `tokenId` token.
      */
-    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
+    event Approval(
+        address indexed owner,
+        address indexed approved,
+        uint256 indexed tokenId
+    );
 
     /**
      * @dev Emitted when `owner` enables or disables (`approved`) `operator` to manage all of its assets.
      */
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+    event ApprovalForAll(
+        address indexed owner,
+        address indexed operator,
+        bool approved
+    );
 
     /**
      * @dev Returns the number of tokens in ``owner``'s account.
@@ -717,7 +824,10 @@ interface IERC721 is IERC165 {
      *
      * - `tokenId` must exist.
      */
-    function getApproved(uint256 tokenId) external view returns (address operator);
+    function getApproved(uint256 tokenId)
+        external
+        view
+        returns (address operator);
 
     /**
      * @dev Approve or remove `operator` as an operator for the caller.
@@ -736,7 +846,10 @@ interface IERC721 is IERC165 {
      *
      * See {setApprovalForAll}
      */
-    function isApprovedForAll(address owner, address operator) external view returns (bool);
+    function isApprovedForAll(address owner, address operator)
+        external
+        view
+        returns (bool);
 
     /**
      * @dev Safely transfers `tokenId` token from `from` to `to`.
@@ -761,11 +874,9 @@ interface IERC721 is IERC165 {
 
 // File: @openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol
 
-
 // OpenZeppelin Contracts v4.4.1 (token/ERC721/extensions/IERC721Metadata.sol)
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @title ERC-721 Non-Fungible Token Standard, optional metadata extension
@@ -790,17 +901,9 @@ interface IERC721Metadata is IERC721 {
 
 // File: @openzeppelin/contracts/token/ERC721/ERC721.sol
 
-
 // OpenZeppelin Contracts v4.4.1 (token/ERC721/ERC721.sol)
 
 pragma solidity ^0.8.0;
-
-
-
-
-
-
-
 
 /**
  * @dev Implementation of https://eips.ethereum.org/EIPS/eip-721[ERC721] Non-Fungible Token Standard, including
@@ -840,7 +943,13 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC165, IERC165)
+        returns (bool)
+    {
         return
             interfaceId == type(IERC721).interfaceId ||
             interfaceId == type(IERC721Metadata).interfaceId ||
@@ -850,17 +959,35 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721-balanceOf}.
      */
-    function balanceOf(address owner) public view virtual override returns (uint256) {
-        require(owner != address(0), "ERC721: balance query for the zero address");
+    function balanceOf(address owner)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        require(
+            owner != address(0),
+            "ERC721: balance query for the zero address"
+        );
         return _balances[owner];
     }
 
     /**
      * @dev See {IERC721-ownerOf}.
      */
-    function ownerOf(uint256 tokenId) public view virtual override returns (address) {
+    function ownerOf(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (address)
+    {
         address owner = _owners[tokenId];
-        require(owner != address(0), "ERC721: owner query for nonexistent token");
+        require(
+            owner != address(0),
+            "ERC721: owner query for nonexistent token"
+        );
         return owner;
     }
 
@@ -881,11 +1008,23 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        require(
+            _exists(tokenId),
+            "ERC721Metadata: URI query for nonexistent token"
+        );
 
         string memory baseURI = _baseURI();
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
+        return
+            bytes(baseURI).length > 0
+                ? string(abi.encodePacked(baseURI, tokenId.toString()))
+                : "";
     }
 
     /**
@@ -915,8 +1054,17 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721-getApproved}.
      */
-    function getApproved(uint256 tokenId) public view virtual override returns (address) {
-        require(_exists(tokenId), "ERC721: approved query for nonexistent token");
+    function getApproved(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (address)
+    {
+        require(
+            _exists(tokenId),
+            "ERC721: approved query for nonexistent token"
+        );
 
         return _tokenApprovals[tokenId];
     }
@@ -924,14 +1072,24 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721-setApprovalForAll}.
      */
-    function setApprovalForAll(address operator, bool approved) public virtual override {
+    function setApprovalForAll(address operator, bool approved)
+        public
+        virtual
+        override
+    {
         _setApprovalForAll(_msgSender(), operator, approved);
     }
 
     /**
      * @dev See {IERC721-isApprovedForAll}.
      */
-    function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
         return _operatorApprovals[owner][operator];
     }
 
@@ -944,7 +1102,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         uint256 tokenId
     ) public virtual override {
         //solhint-disable-next-line max-line-length
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+        require(
+            _isApprovedOrOwner(_msgSender(), tokenId),
+            "ERC721: transfer caller is not owner nor approved"
+        );
 
         _transfer(from, to, tokenId);
     }
@@ -969,7 +1130,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         uint256 tokenId,
         bytes memory _data
     ) public virtual override {
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+        require(
+            _isApprovedOrOwner(_msgSender(), tokenId),
+            "ERC721: transfer caller is not owner nor approved"
+        );
         _safeTransfer(from, to, tokenId, _data);
     }
 
@@ -998,7 +1162,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         bytes memory _data
     ) internal virtual {
         _transfer(from, to, tokenId);
-        require(_checkOnERC721Received(from, to, tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
+        require(
+            _checkOnERC721Received(from, to, tokenId, _data),
+            "ERC721: transfer to non ERC721Receiver implementer"
+        );
     }
 
     /**
@@ -1020,10 +1187,20 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
      *
      * - `tokenId` must exist.
      */
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view virtual returns (bool) {
-        require(_exists(tokenId), "ERC721: operator query for nonexistent token");
+    function _isApprovedOrOwner(address spender, uint256 tokenId)
+        internal
+        view
+        virtual
+        returns (bool)
+    {
+        require(
+            _exists(tokenId),
+            "ERC721: operator query for nonexistent token"
+        );
         address owner = ERC721.ownerOf(tokenId);
-        return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
+        return (spender == owner ||
+            getApproved(tokenId) == spender ||
+            isApprovedForAll(owner, spender));
     }
 
     /**
@@ -1119,7 +1296,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         address to,
         uint256 tokenId
     ) internal virtual {
-        require(ERC721.ownerOf(tokenId) == from, "ERC721: transfer of token that is not own");
+        require(
+            ERC721.ownerOf(tokenId) == from,
+            "ERC721: transfer of token that is not own"
+        );
         require(to != address(0), "ERC721: transfer to the zero address");
 
         _beforeTokenTransfer(from, to, tokenId);
@@ -1176,11 +1356,20 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         bytes memory _data
     ) private returns (bool) {
         if (to.isContract()) {
-            try IERC721Receiver(to).onERC721Received(_msgSender(), from, tokenId, _data) returns (bytes4 retval) {
+            try
+                IERC721Receiver(to).onERC721Received(
+                    _msgSender(),
+                    from,
+                    tokenId,
+                    _data
+                )
+            returns (bytes4 retval) {
                 return retval == IERC721Receiver.onERC721Received.selector;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert("ERC721: transfer to non ERC721Receiver implementer");
+                    revert(
+                        "ERC721: transfer to non ERC721Receiver implementer"
+                    );
                 } else {
                     assembly {
                         revert(add(32, reason), mload(reason))
@@ -1215,30 +1404,40 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
 
 // File: contracts/NonblockingReceiver.sol
 
-
 pragma solidity ^0.8.6;
 
-
-
-
 abstract contract NonblockingReceiver is Ownable, ILayerZeroReceiver {
-
     ILayerZeroEndpoint internal endpoint;
 
     struct FailedMessages {
-        uint payloadLength;
+        uint256 payloadLength;
         bytes32 payloadHash;
     }
 
-    mapping(uint16 => mapping(bytes => mapping(uint => FailedMessages))) public failedMessages;
+    mapping(uint16 => mapping(bytes => mapping(uint256 => FailedMessages)))
+        public failedMessages;
     mapping(uint16 => bytes) public trustedRemoteLookup;
 
-    event MessageFailed(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload);
+    event MessageFailed(
+        uint16 _srcChainId,
+        bytes _srcAddress,
+        uint64 _nonce,
+        bytes _payload
+    );
 
-    function lzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) external override {
+    function lzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) external override {
         require(msg.sender == address(endpoint)); // boilerplate! lzReceive must be called by the endpoint for security
-        require(_srcAddress.length == trustedRemoteLookup[_srcChainId].length && keccak256(_srcAddress) == keccak256(trustedRemoteLookup[_srcChainId]), 
-            "NonblockingReceiver: invalid source sending contract");
+        require(
+            _srcAddress.length == trustedRemoteLookup[_srcChainId].length &&
+                keccak256(_srcAddress) ==
+                keccak256(trustedRemoteLookup[_srcChainId]),
+            "NonblockingReceiver: invalid source sending contract"
+        );
 
         // try-catch all errors/exceptions
         // having failed messages does not block messages passing
@@ -1246,31 +1445,74 @@ abstract contract NonblockingReceiver is Ownable, ILayerZeroReceiver {
             // do nothing
         } catch {
             // error / exception
-            failedMessages[_srcChainId][_srcAddress][_nonce] = FailedMessages(_payload.length, keccak256(_payload));
+            failedMessages[_srcChainId][_srcAddress][_nonce] = FailedMessages(
+                _payload.length,
+                keccak256(_payload)
+            );
             emit MessageFailed(_srcChainId, _srcAddress, _nonce, _payload);
         }
     }
 
-    function onLzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) public {
+    function onLzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) public {
         // only internal transaction
-        require(msg.sender == address(this), "NonblockingReceiver: caller must be Bridge.");
+        require(
+            msg.sender == address(this),
+            "NonblockingReceiver: caller must be Bridge."
+        );
 
         // handle incoming message
-        _LzReceive( _srcChainId, _srcAddress, _nonce, _payload);
+        _LzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
 
     // abstract function
-    function _LzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) virtual internal;
+    function _LzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) internal virtual;
 
-    function _lzSend(uint16 _dstChainId, bytes memory _payload, address payable _refundAddress, address _zroPaymentAddress, bytes memory _txParam) internal {
-        endpoint.send{value: msg.value}(_dstChainId, trustedRemoteLookup[_dstChainId], _payload, _refundAddress, _zroPaymentAddress, _txParam);
+    function _lzSend(
+        uint16 _dstChainId,
+        bytes memory _payload,
+        address payable _refundAddress,
+        address _zroPaymentAddress,
+        bytes memory _txParam
+    ) internal {
+        endpoint.send{value: msg.value}(
+            _dstChainId,
+            trustedRemoteLookup[_dstChainId],
+            _payload,
+            _refundAddress,
+            _zroPaymentAddress,
+            _txParam
+        );
     }
 
-    function retryMessage(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes calldata _payload) external payable {
+    function retryMessage(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes calldata _payload
+    ) external payable {
         // assert there is message to retry
-        FailedMessages storage failedMsg = failedMessages[_srcChainId][_srcAddress][_nonce];
-        require(failedMsg.payloadHash != bytes32(0), "NonblockingReceiver: no stored message");
-        require(_payload.length == failedMsg.payloadLength && keccak256(_payload) == failedMsg.payloadHash, "LayerZero: invalid payload");
+        FailedMessages storage failedMsg = failedMessages[_srcChainId][
+            _srcAddress
+        ][_nonce];
+        require(
+            failedMsg.payloadHash != bytes32(0),
+            "NonblockingReceiver: no stored message"
+        );
+        require(
+            _payload.length == failedMsg.payloadLength &&
+                keccak256(_payload) == failedMsg.payloadHash,
+            "LayerZero: invalid payload"
+        );
         // clear the stored message
         failedMsg.payloadLength = 0;
         failedMsg.payloadHash = bytes32(0);
@@ -1278,105 +1520,29 @@ abstract contract NonblockingReceiver is Ownable, ILayerZeroReceiver {
         this.onLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
 
-    function setTrustedRemote(uint16 _chainId, bytes calldata _trustedRemote) external onlyOwner {
+    function setTrustedRemote(uint16 _chainId, bytes calldata _trustedRemote)
+        external
+        onlyOwner
+    {
         trustedRemoteLookup[_chainId] = _trustedRemote;
     }
 }
 
-// File: contracts/GhostlyGhosts.sol
-
-
+// File: contracts/OmniNFTbsc.sol
 
 pragma solidity ^0.8.7;
 
-
-// 0000KKK0000KKKKKKKKKKKKKKKKKKKKKKKKKKK0KKKKKKKKKKKKKK00000KKKKK0K000000000KKKKKKKK0KKK000KKK000KKKK000KKK00000KK0000000000000000KKKKKKKKKKK000KKKKK000
-// 00KKK0000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000K0xlloxk000000KKKKKKKKKKK00000KK0000KKKK0000KKK0000K000000KK000000000KKKKKKKKKKK0000KKKK000KK
-// KKK0000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000KOl.   ..l000KKKKKKKKKKKKKK0KKK00000KKKK00KKKKKKKKK000000KKKK0000000KKKKKKKKKKK0000KKKKKKKKK00
-// K0000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0KKKKKKKKKKKKKK0x;.... .,xKKKKKKKKKKKKK0klcodddddkO0Okkk0KKKKKKKKK00000KKKKKKKKK000KKKKKKKKKK0000KKKKKKKKKK000
-// 0000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0KKKKKKKKKKKKKKK0l.   .. .oKKKKKKKKKKKK0kc'..',,,,,'''....d0KKKKKK0000KKKKKKKKK0000KKKKKKKKKK00000KKKKKKKKK00KKK
-// 00KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0l..;,.    :OKKKKKKKKKKKx,'ccldxxxxd;. ....:k0KKKKKKKKKKKKKKK000000KKKKKKKKK0000KKKKKKKKKKKKKKK00
-// KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKO, ,o:'''. .'ck0KOxlcclc'.lxxxxxxxxd:';oxdc,';d0KKKKKKKKKKK0000KKKKKKKKKKKK00KKKKKKKKKKK0KKKKK000
-// KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0000KKKKKKKKKKKKKKKKKKKk' ,dl,.:l:,...:c;;:loo:.,dxxxxxxxxxddxxxxxxo,.lkolok0KKK00000KKKKKKKKKKKKKKKKKKKKKKKKK0KKKK00000
-// KKKKKKKKKKKKKKKKKKKKKKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKk, ;xdl;':xxdl'  ,dxxxxc.,dxxxxxxxxxxxxxxxxxxl..... .l00000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000KK
-// KKKKKKKKKKKKKKKKKKKKKKKKKK0000KKKKKKKKKK0KKKKKKKKKKKK0: 'xOxdl,:xOkxc. 'cdxxc.'oxxxxxxxxxxxxxxxxxo,   .,;.'okk0KKKKKKKKKKKKKKKKKKK00KKKKK000KK00000KKK
-// KKKKKKKKKKKKKKKKKKKKKKKK00000KKKKKKKKKK0KKKKKKKKKKKKKKo..ckOkkd,,dkxoc'  'coo;.'cdxxxxxxxxxxxxxxo,.   . .....'d0KKKKKKKKKKKKKKKK000KKKK0000000000KKKKK
-// KKKKKKKKKKKKKKKKKKKKKKK0000KKKKKKKKK000KKKKKKKKKKKKKKKO: .oOkkOd,'lxxddl,....''...,:ldxxxxxxxxdc..,,.'lc. ,, .oKKKKKKKKKKKKKKKKKKKKKK000KK00000KKKKKK0
-// KKKKKKKKKKKKKKKKKKKKK00000KKKKKKKK0000KKKKKKKKKKKKKKKKKk, ,xOkOkx:.;okkOkdlc:,'..    ..,;;::;,.  .';,''. .xk,.dKKKKKKKKKKKKKKKKKKKK0000KK0000KKKKKKK00
-// KKKKKKKKKKKKKKKKKKKK0000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKo. ;xOkkkko,':dkOOOOOkxoc;;'..            .d0Ok;..;;.;kKKKKKKKKKKKKKKKKKKK000KKK000KKKKKKK0000
-// KKKKKKKKKKKKKKKKKK0000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKd,..'dOkkkOkl;',:ldxkkkxolc:;;;;:c;,,,'.  .lkkl' ..  .:OKKKKKKKKKKKKKKKKK000KKKKKKKKKKKKK0000K
-// K000KKKK0KKKKKKK0000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKd;lc..:oxOkkOkxl;'',,,;;;::;,,,'....    .c,....       .oKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000KKK
-// 0000KK00KKKKKKK0000KKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKKKk;,c'   'coxkOOxc;::c;..........   .:dd:...... .::.   .dKKKKKKKKKKKKKKKKKKKKKKKKKKKKK00000KKKK
-// 000K000KKKKKK0000KKKKKKKKK00KKKKKKKKKKKKKKKKKKKKKKKKKK0ko,.,cxOd:'..',:cc:clooc;;:;,'..';lkXWMMWKo'... .;:'. .;x0KKKKKKKKKKKKKKKKKKKKKKKKKK00000KKKKKK
-// 000000KKKKK00000KKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKK0x:',o0NMMMMWNKOxl;'''',,'',,'.';oOXWMMMMMMMMMXk:...;lc....,kKKKKKKKKKKKKKKKKK00KKKKKK0000KKKK00KK
-// K000KKKKKK0000KKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKKKk:':kNMMMMMMMMMMMMMWNXKKXXXXXXXXNWMMMMMMMMMMMMMMMW0d;',,.',.'xKKKKKKKKKKKKKK0000KKKKKK000KKKKKK00KK
-// 000KKKKKK00KKKKKKKKK0000KKKKKKKKKKKKKKKKKKKKKKKKK0o,;OWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWO:. .:ok0KKKKKKKKKKKKK0000KKKKK0000KKKKKKKKKKK
-// 00KKKK00KKKKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKKK0l'oNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXo. :OKKKKKKKKKKKKK0000KKKKKK000KKKKKKKKKKKKK
-// KKKK000KKKKKKKKKK0000KKKKKKKKKKKKKKKKKKKKKKKKKK0l'oNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNd..dKKKKKKKKKKKK000KKKKKKK00KKKKKKKKKKKKKKK
-// K00000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKo'lXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWk',kKKKKKKKKKK00KKKKKKKKKKKKKKKKKKKKKKKKKK
-// 00000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKKKK0OkO00d,cXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWk''x00KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-// 0000KKKKKKKKK000KKKKKKKKKKKKKKKKKKKKK0Kkc..,''..,ldOKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXl..o0KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-// 00KKKKKKKKK0000KKKKKKKKKKKKKKKKKKKKKKKO:.'x0kddoc,...;xKNMMMMMMMMMMMMMMMMMMMMMMMMMMMMWWNXNNXXXKXNWMMMMWNXKOxlcll.'kKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-// 0KKKKKKKKK0000KKKKKK00KKKKKKKKKKKK00K0c.:KNkc,,cxkOkdc:;;ckXNWMMMMMMMMMMMWXK0Odoolc:::::::cc:;;,,ckOxoc;,..,:oKWx.;OKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-// KKKKKKKK0000KKKKKKKKKKKKKKKKKKKK000KKo.;KXc       .:ldkkkdc;',:x0KK00OxdddooooooddxxOO0KKKKK0OOx' .lolodkO0XNN0kx;.:O000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-// KKKKKKK0000KKKKKKKKKKKKKKKKKKKK00KKKk,,0Xc             .':k0d:,',,...,cxKXOxdolcccccloodk0NWMWWWx'oXNWMMMWKxc'.;00,.:k00KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-// KKKKK00000KKKKKKKKKKKKKKKKKKK000KKK0:.oWO'                .OXkxOKO, 'OWNx,.              .'l0NMMXddNMWXkl,..':xXWWk'.cOKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-// KKK00000KKKKKKKKKKKKKKKKKKKK0KKKKKK0l.:XNo.               .xx. .::. :XNl                    .kWMMKdOKl'.'cd0NMMMMMWk,.cOKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
-// KK0000KKKKKKKKKKKKKKKKKKKKK0KKKKKKKK0l,dWK,               'x:.lkd' ;0Mk.                     :XMMMX0kdx0NMMMMMMMMMMWk..l0KKKKKKKKKKKKKKKKKKKKKKKKKKKK0
-// 00000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKc.lK0o,             co.;XW0;.kWMx.                     ,KMMMMNXWMMMMMMMMMMMMMMNo.'xKKKKKKKKKKKKKKKKKKKKKKKKKK000
-// 000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0Kd. :0NXOl'.       'dk'.kMMWd.,OWK,                    .oNMMWKol0MMMMMMMMMMMMMMMK: ,kKKKKKKKKKKKKKKKKKKKKKKKK000K
-// KKKKKKKK00KKKKKKKKKKKKKKKKKKKKKKKKKK0KO,.',,:ldddxxxddxkOO:.lNMMMXl..dXO,                  .dNMMWk;.lXMMMMMMMMMMMMMMMMk. ;OKKKKKKKKKKKKKKKKKKKKKKKKKKK
-// KKKK00000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKd.'0Xxlc;'.,cdl:;'.':kNMMMMWK:  ,kKkolc:;,...  ...,cxKWMMNo..c0WMMMMMMMMMMMMMMMMWd. :OKKKKKKKKKKKKKKKKKKKKKKKKKK
-// KK00000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKo.,KMMMMWXOdc,';ldkKNMMMMMMMWXx;..:ONWWWWNX0OOO0KXWWMMMMNo..lOWMMMMMMMMMMMMMMMMMMNc .l0KKKKKKKKKKKKKKKKKKKKKKKKK
-// 000000KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK0l ,KMMMMMMMMMWNWMMMMMMMMMMMMMMMNOo::::ccclc::ccccclooodxocoOXWMMMMMMMMMMMMMMMMMMMNo. 'xKKKKKKKKKKKKKKKKKKKKKKKKK
-// 0000KKKKKKKKKKKKKK0Oxollcccodk0KKKKKK0l .OMMMMMMMMMMMMMMMMMMMMMMMMKdd0WMWNK0OOOOkkkkkkkk0KK00O0XMMMMMMMMMMMMMMMMMMMMMMMk'   :OKKKKKKKKKKKKKKKKKKKKKKKK
-// 000KKKKKKKKK0Okxdl:;;,;::ccl:;:lxOKKKKo.'0MMMMMMMMMMMMMMMMMMMMWWNKo..'lKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNk;  'xKKKKKKKKKKKKKKKKKKKKKKKK
-// 0KKKKKKKKKKk:',,;:coddddoollodo:oOKK00l.,KMMMMMMMMMMMMMMNklcc::;,,,ck0kXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWx.  .,x000KKKKKKKKKKKKKKKKKK00
-// KKKKKKKKKKKd.:kkxxdxxddddxO0KKOlo0K00Ko.'0MMMMMMMMMMMMMMW0kkxxkO0KNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNd,.. .lO0KKKKKKKKKKKKKKKKKKK00
-// K00KKKKKK0Kk':KWXKKKKKKKKKKKKKkco0K0KKo.,KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNOdOKl..co. .,d0KKKK00KKKKKKKKKKKKK0
-// 000KKKK0KKKO;,0WXKKKKKKKKKKKKKkloOKKKKo.:XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWX0KO, ':'.'x0:   :0KKK00KKKKKKKKKKKK000
-// 00KK00KKKKKKl.dNNKKKKKKKK00OOkl;ckKK0Kx.,0MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXKXWMMO,..,..o;...lKd. ;xKKK00KKKKKKKKKKKKK000
-// KK0000KKKKKKk,;KNKK0kkOO00Oxc,..,o0KKKx..OW0xdkKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWx'..;oOo..:,..'.  ..xK,.c0K000KKKKKKKKKKKKKKK00
-// K000KKKKKKKKKo'dNOolcllccc:ccdkxokKKKKk'.kXl';:co0WMMMMMXdl0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWNWMMMMNc ,c:.'l:':,.c:. ,ldKNl ,kK0KKKKKKKKKKKKKKKK000
-// 000KKKKKKKK00k,:0xcdkkdoodk0KKKOok0xddo'.dWd,lxdc:oKWMW0;. ;XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMW0:'cOkloOd.'odc.':. .:XNOkXMMMWx..o0KKKKKKKKKKKKKKKK0000
-// 000KK0KKKK0000c,OX00000KKKKKKKKOdxc..',:;d0x;:ddddc:O0l. ,,,kMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX;   ''...ll'',. .. ..'lKMMMMMMM0' .lOKKKKKKKKKKKKK000000
-// 0KKK00000000KKx;dXKKKKKKKKKKKKK0xd;.;oodl'....';lo:... .,:,.,OWMMMMMMWX0kx0NWMMMMMMMMMMMMMMWWK; ';. .'';OX0x, .. .'..oWMMMMMMK;  .lKKKKKKKKKKKKK0000O0
-// 0KK00000000KK0x,;o:;;::cllllloddlxx;.;cc,  ;dl'...';:;..xXl...:OWMMW0c.. .;lodkNMMXxlodOKklccxx,',.  ..'kWMWO;..':;,lKMMMMMMMWo. .c0KKKKKKKKKKKKKK0000
-// K00O000000K0d;,,:l'.,:,'.. .,,;;;xK0xc'.....,,.. ,odxx, .;:,:xo;:kW0'  ......;;cOWk',lc;..cd,'OO,.  .''.:XMMMNOkKXXNWMMMMMMMMWo.  ,kKKKKKKKKKKKKK00000
-// 00O000000KOc.c0NO:..:dxOOo,.',';oOKKK0c  ;oooc'  'okd,..,:o;'OWXd;cc. ,oo'  ,od:cX0;,oc' .cl';Kklo'..:l,:KMMMMMMMMMMMMMMMMMMMNo  ..oKK000KKKKKKKK0KKKK
-// 00000000K0c.dNMMWOl;'',;;,,,,'.'dO00Kk, ,llc;;,'....  .oo;.  'cxOo..:'.,'.   .'.:KNo....   .,OWxckc,xkod0WMMMMMMMMMMMMMMMMMMMWd. ..dK000KKKKKKKKKKKKKK
-// 0000000KKk',KMMMMMMWNXXKKKKXNNOl',oOKx. oWWX000KK:.;:. .ldc.   ..,;.'clc:.   .;,'xWO'......'dWMXxolxNMMMMMMMMMMMMMMMMMMMMMMMMMO'  'xK00KKKKKKKKKKKKKKK
-// 00000KKKKO,'0MMMMMMMMMMMMMMMMMMWKl';dd..xMMMMMMMWl'lo:;;:l;.';'.;xx:':ccc;',codooOWNkooxOo;cxO0NWMWWMMMMMMMMMMMMMMMMMMMMMMMMMMNl  .x00KKKKKKKKKKKKKKKK
-// 0000KKKKKKl.dWMMMMMMMMMMMMMMMMMMMWO;.,.'0MMMMMMMWo..cKWNXKxcloll0NXX0kxxxkXWWWNNWMMMMMW0c......';lxKWMMMMMMMMMMMMMMMMMMMMMMMMMMK;  ;kKKKKKKKKKKKKKKKKK
-// 000KKKKK0KO;'kWMMMMMMMMMMMMMMMMMMMMNx. ,KMMMMMMMWklkNMMMMMMNXXNMMMMMMMMMMMMMMMMMMMMMMWx,:xOO00koc;,;cdONMMMMMMMMMMMMMMMMMMMMMMMW0:  .oOKKKKKKKKKKKKKK0
-// 00KKKK0KKK0x,'OMMMMMMMMMMMMMMMMMMMMWO, .xMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWx'oNMMMMMMMMMWKOkddkXWMMMMMMMMMMMMMMMMMMMMMMXd. .l0KKKKKKKKKKKK00
-// 0KKK00KKK000x,,OWMMMMMMMMMMMMMMMMMMNo. :KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX:,KMMMMMMMMMMMMMMWKdldKWMMMMMMMMMMMMMMMMMMMMMNk' .oKKKKKKKKKKKKKK
-// KKK00KKK000KKk,'xNMMMMMMMMMMMMMMMMWk' .OMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK;;XMMMMMMMMMMMMMMMMW0o:dKNWMMMMMMMMMMMMMMMMMMMWd. 'xKKKKKKKKKKKKK
-// KK00KK0000KKKKx..kMMMMMMMMMMMMMMMWk' .dWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK,'0MMMMMMMMMMMMMMMMMMWKxddKMMMMMMMMMMMMMMMMMMMMK,  ;OKKKKKKKKKKK0
-// KKKKK0000KKKKK0: :XMMMMMMMMMMMMMWk'  oNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK;.cxXMMMMMMMMMMMMMMMMMMMMWWMMMMMMMMMMMMMMMMMMMMWd. .l0KKKKKKKKK00
-// KKKK0000KKKKKK0: .xWMMMMMMMMMMMWO' .cXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWk,. lNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMXc  .dKKKKKKKK000
-// KKK00000KKKKKK0:  :NMMMMMMMMMMW0;  cNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMW0; .kWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWO'  ;OKKKKK0000K
-// KK000000KKKKKK0l  .OMMMMMMMMMMXc  ;KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK, :XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNl  .dKKKK0000KK
-// K0000000K00KK0Kx' .xMMMMMMMMMNd. ,0MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMx..kMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWx. .oKKK0000KKK
-// K000000K000KKKK0l .dMMMMMMMMWO' 'OMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX; :XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWO'  c0K0000KKKK
-// K00000K000KKKK0Kx. lNMMMMMMMK; .xWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWo .xMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMk. .lK000KKKKKK
-// 00000K000KKKKK0Kx. ;XMMMMMMNo. cNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMd. lWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMk.  c000KKKKKK0
-// 000KK000KKKKK00Kx. .OMMMMMM0, '0MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMx. ;XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM0,  :O0KKKKKK00
-// 00K0000KKKKKKKKKx.  oWMMMMNo. lNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMk. ;XMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX:  ;OKKKKKKK00
-// 0K0000KKKKKK00KKd.  ;XMMMMk. ,0MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMO. cNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMX:  ;OK0KKKK000
-// KK000KKKKKK000K0o.  ,KMMMMd .dWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMO. oWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWMMMMMMMMMX:  :0KKKKK00O0
-
-
-contract fantomGh0stlyGh0sts is Ownable, ERC721, NonblockingReceiver {
-
+contract OmniNFTbsc is Ownable, ERC721, NonblockingReceiver {
     address public _owner;
     string private baseURI;
-    uint256 nextTokenId = 7092;
-    uint256 MAX_MINT_FANTOM = 7477;
+    uint256 nextTokenId = 300;
+    uint256 MAX_MINT_BINANCE = 400;
 
-    uint gasForDestinationLzReceive = 250000;
+    uint256 gasForDestinationLzReceive = 350000;
 
-    constructor(string memory baseURI_, address _layerZeroEndpoint) ERC721("gh0stlygh0sts", "gg") { 
+    constructor(string memory baseURI_, address _layerZeroEndpoint)
+        ERC721("OmniNFTbsc", "ONFT")
+    {
         _owner = msg.sender;
         endpoint = ILayerZeroEndpoint(_layerZeroEndpoint);
         baseURI = baseURI_;
@@ -1386,19 +1552,29 @@ contract fantomGh0stlyGh0sts is Ownable, ERC721, NonblockingReceiver {
     // you can choose to mint 1 or 2
     // mint is free, but payments are accepted
     function mint(uint8 numTokens) external payable {
-        require(numTokens < 3, "GG: Max 2 NFTs per transaction");
-        require(nextTokenId + numTokens <= MAX_MINT_FANTOM, "GG: Mint exceeds supply");
+        require(numTokens > 0, "Must mint at least 1 NFT");
+        require(numTokens < 3, "Max 2 NFTs per transaction");
+        require(
+            nextTokenId + numTokens <= MAX_MINT_BINANCE,
+            "Mint exceeds supply"
+        );
         _safeMint(msg.sender, ++nextTokenId);
         if (numTokens == 2) {
             _safeMint(msg.sender, ++nextTokenId);
         }
     }
 
-    // This function transfers the nft from your address on the 
+    // This function transfers the nft from your address on the
     // source chain to the same address on the destination chain
-    function traverseChains(uint16 _chainId, uint tokenId) public payable {
-        require(msg.sender == ownerOf(tokenId), "You must own the token to traverse");
-        require(trustedRemoteLookup[_chainId].length > 0, "This chain is currently unavailable for travel");
+    function traverseChains(uint16 _chainId, uint256 tokenId) public payable {
+        require(
+            msg.sender == ownerOf(tokenId),
+            "You must own the token to traverse"
+        );
+        require(
+            trustedRemoteLookup[_chainId].length > 0,
+            "This chain is currently unavailable for travel"
+        );
 
         // burn NFT, eliminating it from circulation on src chain
         _burn(tokenId);
@@ -1408,23 +1584,35 @@ contract fantomGh0stlyGh0sts is Ownable, ERC721, NonblockingReceiver {
 
         // encode adapterParams to specify more gas for the destination
         uint16 version = 1;
-        bytes memory adapterParams = abi.encodePacked(version, gasForDestinationLzReceive);
+        bytes memory adapterParams = abi.encodePacked(
+            version,
+            gasForDestinationLzReceive
+        );
 
         // get the fees we need to pay to LayerZero + Relayer to cover message delivery
         // you will be refunded for extra gas paid
-        (uint messageFee, ) = endpoint.estimateFees(_chainId, address(this), payload, false, adapterParams);
-        
-        require(msg.value >= messageFee, "GG: msg.value not enough to cover messageFee. Send gas for message fees");
+        (uint256 messageFee, ) = endpoint.estimateFees(
+            _chainId,
+            address(this),
+            payload,
+            false,
+            adapterParams
+        );
+
+        require(
+            msg.value >= messageFee,
+            "msg.value not enough to cover messageFee. Send gas for message fees"
+        );
 
         endpoint.send{value: msg.value}(
-            _chainId,                           // destination chainId
-            trustedRemoteLookup[_chainId],      // destination address of nft contract
-            payload,                            // abi.encoded()'ed bytes
-            payable(msg.sender),                // refund address
-            address(0x0),                       // 'zroPaymentAddress' unused for this
-            adapterParams                       // txParameters 
+            _chainId, // destination chainId
+            trustedRemoteLookup[_chainId], // destination address of nft contract
+            payload, // abi.encoded()'ed bytes
+            payable(msg.sender), // refund address
+            address(0x0), // 'zroPaymentAddress' unused for this
+            adapterParams // txParameters
         );
-    }  
+    }
 
     function setBaseURI(string memory URI) external onlyOwner {
         baseURI = URI;
@@ -1435,13 +1623,13 @@ contract fantomGh0stlyGh0sts is Ownable, ERC721, NonblockingReceiver {
     }
 
     // This allows the devs to receive kind donations
-    function withdraw(uint amt) external onlyOwner {
+    function withdraw(uint256 amt) external onlyOwner {
         (bool sent, ) = payable(_owner).call{value: amt}("");
-        require(sent, "GG: Failed to withdraw Ether");
+        require(sent, "Failed to withdraw Ether");
     }
 
     // just in case this fixed variable limits us from future integrations
-    function setGasForDestinationLzReceive(uint newVal) external onlyOwner {
+    function setGasForDestinationLzReceive(uint256 newVal) external onlyOwner {
         gasForDestinationLzReceive = newVal;
     }
 
@@ -1449,15 +1637,23 @@ contract fantomGh0stlyGh0sts is Ownable, ERC721, NonblockingReceiver {
     // Internal Functions
     // ------------------
 
-    function _LzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) override internal {
+    function _LzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) internal override {
         // decode
-        (address toAddr, uint tokenId) = abi.decode(_payload, (address, uint));
+        (address toAddr, uint256 tokenId) = abi.decode(
+            _payload,
+            (address, uint256)
+        );
 
         // mint the tokens back into existence on destination chain
         _safeMint(toAddr, tokenId);
-    }  
+    }
 
-    function _baseURI() override internal view returns (string memory) {
+    function _baseURI() internal view override returns (string memory) {
         return baseURI;
     }
 }

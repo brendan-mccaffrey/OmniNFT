@@ -1,18 +1,20 @@
 const hre = require("hardhat");
 
 async function main() {
+    // test uri
+    // uri = "https://boredapeyachtclub.com/api/mutants/"
 
-    uri = "https://boredapeyachtclub.com/api/mutants/"
-    cname = "L0";
+    uri = "ipfs://REDACTED/eth/"
+    cname = "REDACTED";
 
     const Contract = await hre.ethers.getContractFactory(cname);
 
-    testEnd = "0x79a63d6d8BBD5c6dfc774dA79bCcD948EAcb53FA";
-    mainEnd = "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675";
+    // testEnd = "REDACTED";
+    // confirmed
+    mainEnd = "REDACTED";
 
-    // TODO | Constructor arg
-    const contract = await Contract.deploy(uri, testEnd);
-
+    // TODO CHANGE METADATA LINK
+    const contract = await Contract.deploy(uri, mainEnd);
     await contract.deployed();
 
     console.log(cname, " deployed to:", contract.address);
@@ -23,4 +25,4 @@ main()
     .catch((error) => {
         console.error(error);
         process.exit(1);
-});
+    });

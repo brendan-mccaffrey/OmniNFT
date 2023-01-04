@@ -5,6 +5,7 @@ async function main() {
     // TODO
     let con = await hre.ethers.getContractFactory("L0")
 
+    // Layer Zero Chain IDs
     ethId = 10001
     bscId = 10002
     avaxId = 10006
@@ -13,8 +14,8 @@ async function main() {
     optId = 10011
     ftmId = 10012
     // the contracts were deployed to the same address in the test run
-    testaddr = "0x034697223c82C3ABEC358D0ccD68f5713Fc21011";
-    // ethTestAddr = "0x034697223c82C3ABEC358D0ccD68f5713Fc21011"
+    testaddr = "REDACTED";
+    // ethTestAddr = ""
     // polyTestAddr = ""
     // arbTestAddr = ""
     // optTestAddr = ""
@@ -36,4 +37,4 @@ main()
     .catch((error) => {
         console.error(error);
         process.exit(1);
-});
+    });
