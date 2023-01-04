@@ -29,11 +29,13 @@ Configure .env
 - change etherscan
 
 // deploy contract
+
 1) `npx hardhat run scripts/eth/deploy.js --network eth_main`
 
 - log address in addremote
 
 // verify on etherscan
+
 2) `npx hardhat verify --contract "contracts/omninft-eth.sol:OmniNFT" --network eth_main "CONTRACT_ADDRESS"  "LZ_ENDPOINT_ADDR" "METADATA_URI"`
 
 - change contract names
@@ -50,6 +52,7 @@ Configure .env
 - MAKE SURE all addremotes have correct deployment addresses
 
 // add remote contracts for omnichain communication
+
 3) `npx hardhat run scripts/eth/addremote.js --network eth_main`
 
 - change contract names
