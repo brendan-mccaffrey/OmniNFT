@@ -13,11 +13,9 @@ async function main() {
     );
 
     resp = await contract.balanceOf("");
-
     console.log("Expect 1:", resp)
 
     resp = await contract.ownerOf(1);
-
     console.log("Expect our addr", resp);
 }
 

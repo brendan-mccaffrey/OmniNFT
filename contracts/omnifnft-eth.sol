@@ -1528,7 +1528,7 @@ abstract contract NonblockingReceiver is Ownable, ILayerZeroReceiver {
     }
 }
 
-// File: contracts/GhostlyGhosts.sol
+// File: contracts/OmniNFTeth.sol
 
 pragma solidity ^0.8.7;
 

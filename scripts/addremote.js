@@ -5,7 +5,7 @@ async function main() {
     // TODO
     let con = await hre.ethers.getContractFactory("L0")
 
-    // Layer Zero Chain IDs
+    // Layer Zero Chain IDs - TODO may need changing
     ethId = 10001
     bscId = 10002
     avaxId = 10006

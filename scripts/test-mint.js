@@ -17,7 +17,7 @@ async function main() {
     // avaxTestAddr = ""
 
     const contract = await con.attach(
-
+        testaddr
     );
 
     let resp = await contract.mint(1);
@@ -27,11 +27,8 @@ async function main() {
 
     console.log("minted");
 
-    resp = await contract.balanceOf("todo - ouraddr");
-
-    console.log("Expect 1 or 2:", resp)
-
-
+    resp = await contract.balanceOf("TODO EOA address");
+    console.log("Expect 1:", resp)
 }
 
 main()
