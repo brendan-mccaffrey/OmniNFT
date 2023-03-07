@@ -4,18 +4,15 @@ This is an omnichain nft project scaffold example using Layer Zero.
 
 ### A few notes:
 
-- first of all, I know this is gross. I did this a while ago (and one of my first major NFT deployments), and I wrote this entire thing (including contracts, test deployments, test mints/traverses, mainnet deployments) in under 48 hours. What I should have done, for example, it automate all setRemote calls within a chain in a for loop.   
-    - Note to future self, this requires a sleep bc u will get rate limited on hardhat.
+- Firstly, forgive me for sloppy code. This was done a while ago, I only made a few changes to slightly improve readability and remove sensitive information. A much better layout can be implemented, I encourage others to do so! Some ideas for improvement:
+    - automate setRemote calls (within a chain) in a for loop (may require a sleep bc of rate limiting)
+    - implement this in Foundry (much better than hardhat imo)
 
-- also, since I've wrote this (many months ago), I've transitioned to Foundry. Much better than hardhat imo. I will not transition this to foundry bc its a waste of my time.
-
-- the contract files are named "OmniNFT(chain)". However, prior to deployment, the name of the actual contract should be changed to the the chain-agnostic version "OmniNFT", so that the contracts are more "chain agnostic". This required because:
-    - hardhat will have issues recognizing the correct one each time.
-    - you cant use the same contract bc of mint IDs
+- the contract files are named "OmniNFT(chain)". However, prior to deployment, the name of the actual contract should be changed to the the chain-agnostic version (e.g. "mynft"), so that the contracts are more "chain agnostic". Temporarily renaming the contracts (or editing the same contract between deployments) is required because:
+    - hardhat will have issues recognizing the correct one each time (`getContractFactory()`).
+    - you cant use the same contract bc of mint IDs (i.e. don't want to mint ID 1 on eth and ID 1 on bsc, etc.)
 
 - the only differencce between each contract is the start ID (nextTokenID) and max mint tokens. This is so that minting on different chains do not conflict with one another, etc.
-
-- mutants were used as sample metadata URI.
 
 
 ## DEPLOYMENT
@@ -26,7 +23,7 @@ Configure .env
 
 - change contract names
 - delete artifacts and cache
-- change etherscan
+- change etherscan (arbiscan, avascan, etc.) in hardhat config
 
 // deploy contract
 
